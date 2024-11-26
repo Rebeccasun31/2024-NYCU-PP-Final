@@ -1,3 +1,0 @@
-[submodule "source/extern/glm"]
-	path = source/extern/glm
-	url = https://github.com/g-truc/glm/releases/tag/1.0.0
