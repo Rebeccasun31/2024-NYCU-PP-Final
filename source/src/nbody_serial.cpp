@@ -1,4 +1,5 @@
 #include <math.h>
+#include <iostream>
 
 #include "./header/nbody.h"
 
@@ -35,13 +36,15 @@ static void _nBodyCalculate(const point *currpoints, point *newpoint, int i, dou
 	ay *= G;
 	az *= G;
 
+	std::cout << ax << ' ' << ay << ' ' << az << '\n';
+
 	// Update speed
-	// newpoint->_sx = currpoints[i]._sx + ax * dt;
-	// newpoint->_sy = currpoints[i]._sy + ay * dt;
-	// newpoint->_sz = currpoints[i]._sz + az * dt;
-	newpoint->_sx = 0;
-	newpoint->_sy = 0;
-	newpoint->_sz = 0;
+	newpoint->_sx = currpoints[i]._sx + ax * dt;
+	newpoint->_sy = currpoints[i]._sy + ay * dt;
+	newpoint->_sz = currpoints[i]._sz + az * dt;
+	// newpoint->_sx = 0;
+	// newpoint->_sy = 0;
+	// newpoint->_sz = 0;
 
 	// Update position
 	newpoint->_x = currpoints[i]._x + newpoint->_sx * dt;
@@ -51,7 +54,7 @@ static void _nBodyCalculate(const point *currpoints, point *newpoint, int i, dou
 
 void nBodyCalculateSerial(const point *currpoints, point *newpoints, double dt)
 {
-	for (int i = 0; i < POINT_CNT; ++i) {
+	for (int i = 1; i < POINT_CNT; ++i) {
 		_nBodyCalculate(currpoints, &newpoints[i], i, dt);
 	}
 }

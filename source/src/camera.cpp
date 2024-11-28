@@ -77,6 +77,6 @@ void Camera::updateProjectionMatrix(float aspectRatio)
 {
     constexpr float FOV = glm::radians(45.0f);
     constexpr float zNear = 0.1f;
-    constexpr float zFar = 1000.0f;
+    constexpr float zFar = 10000.0f;
     projectionMatrix = glm::perspective(FOV, aspectRatio, zNear, zFar);
 }

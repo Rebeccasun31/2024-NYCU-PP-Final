@@ -123,6 +123,7 @@ int main() {
 
         glm::mat4 base(1.0f), earthModel(1.0f), cubeModel(1.0f);
 
+        // earth
         earthModel = glm::rotate(earthModel, glm::radians(rotateEarthDegree), glm::vec3(0.0f, 1.0f, 0.0f));
         earthModel = glm::scale(earthModel, glm::vec3(10.0f, 10.0f, 10.0f));
 
@@ -140,6 +141,7 @@ int main() {
 
         glUseProgram(0);
 
+        // nbody
         nBodyCalculateSerial(points1, points2, dt * DELTA_TIME_MUL);
         tmp = points1;
 		points1 = points2;
@@ -147,14 +149,15 @@ int main() {
 
         glUseProgram(shaderProgram);
 		for (int i = 0; i < POINT_CNT; i++) {
-            cubeModel = glm::translate(cubeModel, glm::vec3(points1[i]._x, points1[i]._y, points1[i]._z));
+            // std::cout << points1[i]._x << points1[i]._y << points1[i]._z <<'\n';
+            cubeModel = glm::translate(base, glm::vec3(points1[i]._x, points1[i]._y, points1[i]._z));
             cubeModel = glm::scale(cubeModel, glm::vec3(points1[i]._size, points1[i]._size, points1[i]._size));
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubeModel));
             glUniformMatrix4fv(viewLoc, 1, GL_FALSE, camera.getViewMatrix());
             glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, camera.getProjectionMatrix());
 
-            glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(255.0f, 255.0f, 255.0f)));
+            glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(points1[i]._r, points1[i]._g, points1[i]._b)));
 
             glBindVertexArray(cubeVAO);
             glDrawArrays(GL_TRIANGLES, 0, cubeObject->positions.size() / 3);
@@ -379,9 +382,15 @@ void init() {
     earthVAO = modelVAO(*earthObject);
     cubeVAO = modelVAO(*cubeObject);
 
-    for (int i = 0; i < POINT_CNT; ++i) {
-		unsigned int seed = SEED;
-		vertices_1[i] = point(seed);
-		vertices_2[i] = vertices_1[i];
-	}
+    vertices_1[0] = point(0, 0, 0, 255, 255, 255, 20, POINT_MASS_MAX * 100, 0, 0, 0);
+    vertices_2[0] = vertices_1[0];
+
+    vertices_1[1] = point(-100, 0, 0, 255, 255, 255, 2, 10, 0, sqrt(GRAVITATIONAL_G * POINT_MASS_MAX * 100 / 100), 0);
+    vertices_2[1] = vertices_1[1];
+
+    // for (int i = 1; i < POINT_CNT; ++i) {
+	// 	unsigned int seed = SEED;
+	// 	vertices_1[i] = point(seed);
+	// 	vertices_2[i] = vertices_1[i];
+	// }
 }
