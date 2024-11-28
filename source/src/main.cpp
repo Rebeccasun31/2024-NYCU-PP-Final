@@ -30,8 +30,8 @@ void nextdrawCircle(glm::quat rota, glm::vec3 *rotated, glm::vec3 *beforerotate)
 void drawCircle(float px, float py, float pz, float R);
 
 // settings
-int SCR_WIDTH = 800;
-int SCR_HEIGHT = 600;
+int SCR_WIDTH = 1600;
+int SCR_HEIGHT = 900;
 
 // Shader
 unsigned int vertexShader, fragmentShader, shaderProgram;

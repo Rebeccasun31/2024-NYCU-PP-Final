@@ -5,7 +5,7 @@ Camera::Camera(glm::vec3 _position)
     up(0, 1, 0),
     front(0, 0, -1),
     right(1, 0, 0),
-    rotation(glm::identity<glm::quat>()),
+    rotation(glm::identity<glm::quat>()), 
     projectionMatrix(1),
     viewMatrix(1)
 {
