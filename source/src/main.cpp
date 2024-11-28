@@ -9,6 +9,7 @@
 #include "./header/stb_image.h"
 #include "./header/point.h"
 #include "./header/nbody.h"
+#include "./header/camera.h"
 
 #define ANGEL_TO_RADIAN(x) (float)((x)*M_PI / 180.0f)
 
@@ -104,16 +105,21 @@ int main() {
     GLint textureLoc = glGetUniformLocation(shaderProgram, "ourTexture");
     GLint colorLoc = glGetUniformLocation(shaderProgram, "ourColor");
 
+    // camera
+	Camera camera(glm::vec3(0.0f, 100.0f, 180.0f));
+	camera.initialize(static_cast<float>((float)SCR_WIDTH) / (float)SCR_HEIGHT);
+
     // render loop
     while (!glfwWindowShouldClose(window)) {
         point* tmp;
         // render
         glClearColor(0 / 255.0, 0 / 255.0, 0 / 255.0, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+		camera.move(window);
+        // glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 100.0f, 180.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 100.0f, 180.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
+        // glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
 
         glm::mat4 base(1.0f), earthModel(1.0f), cubeModel(1.0f);
 
@@ -122,8 +128,8 @@ int main() {
 
         glUseProgram(shaderProgram);
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(earthModel));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, camera.getViewMatrix());
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, camera.getProjectionMatrix());
 
         glUniform1i(textureLoc, 1);
         glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(0.0f, 0.0f, 0.0f)));
@@ -145,8 +151,8 @@ int main() {
             cubeModel = glm::scale(cubeModel, glm::vec3(points1[i]._size, points1[i]._size, points1[i]._size));
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubeModel));
-            glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-            glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+            glUniformMatrix4fv(viewLoc, 1, GL_FALSE, camera.getViewMatrix());
+            glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, camera.getProjectionMatrix());
 
             glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(255.0f, 255.0f, 255.0f)));
 

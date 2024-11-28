@@ -64,8 +64,8 @@ void Camera::move(GLFWwindow *window)
 
 void Camera::updateViewMatrix()
 {
-    constexpr glm::vec3 original_front(0, 0, -1);
-    constexpr glm::vec3 original_up(0, 1, 0);
+    constexpr glm::vec3 original_front(0.0f, -100.0f, -180.0f);
+    constexpr glm::vec3 original_up(0.0f, 1.0f, 0.0f);
 
     front = rotation * original_front;
     up = rotation * original_up;
@@ -77,7 +77,6 @@ void Camera::updateProjectionMatrix(float aspectRatio)
 {
     constexpr float FOV = glm::radians(45.0f);
     constexpr float zNear = 0.1f;
-    constexpr float zFar = 100.0f;
-
+    constexpr float zFar = 1000.0f;
     projectionMatrix = glm::perspective(FOV, aspectRatio, zNear, zFar);
 }
