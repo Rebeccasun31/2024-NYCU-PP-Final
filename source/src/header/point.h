@@ -3,9 +3,9 @@
 #define SEED 0xdeadbeef - 0x55665566 * i
 #define GRAVITATIONAL_G 6.6743
 #define DELTA_TIME_MUL 100
-#define POINT_CNT 2
+#define POINT_CNT 100
 #define POINT_XYZ_MAX  3000.0
-#define POINT_SIZE_MAX 10.0
+#define POINT_SIZE_MAX 50.0
 #define POINT_MASS_MAX 100.0
 #define POINT_SPEED_MAX 100.0
 
@@ -16,7 +16,7 @@ struct point
     point();
     point(unsigned int seed);
     point(float x, float y, float z, float r, float g, float b, float size,
-        float mass, float sx, float sy, float sz);
+        float mass, float sx, float sy, float sz, int character);
 
     float _x;
     float _y;
@@ -29,4 +29,5 @@ struct point
     float _sy;
     float _sz;
     float _mass;
+    int _character;
 };

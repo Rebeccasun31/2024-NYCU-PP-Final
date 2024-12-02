@@ -382,15 +382,15 @@ void init() {
     earthVAO = modelVAO(*earthObject);
     cubeVAO = modelVAO(*cubeObject);
 
-    vertices_1[0] = point(0, 0, 0, 255, 255, 255, 20, POINT_MASS_MAX * 100, 0, 0, 0);
-    vertices_2[0] = vertices_1[0];
+    // vertices_1[0] = point(0, 0, 0, 255, 255, 255, 20, POINT_MASS_MAX * 100, 0, 0, 0);
+    // vertices_2[0] = vertices_1[0];
 
-    vertices_1[1] = point(-100, 0, 0, 255, 255, 255, 2, 10, 0, sqrt(GRAVITATIONAL_G * POINT_MASS_MAX * 100 / 100), 0);
-    vertices_2[1] = vertices_1[1];
+    // vertices_1[1] = point(-100, 0, 0, 255, 255, 255, 2, 10, 0, sqrt(GRAVITATIONAL_G * POINT_MASS_MAX * 100 / 100), 0);
+    // vertices_2[1] = vertices_1[1];
 
-    // for (int i = 1; i < POINT_CNT; ++i) {
-	// 	unsigned int seed = SEED;
-	// 	vertices_1[i] = point(seed);
-	// 	vertices_2[i] = vertices_1[i];
-	// }
+    for (int i = 1; i < POINT_CNT; ++i) {
+		unsigned int seed = SEED;
+		vertices_1[i] = point(seed);
+		vertices_2[i] = vertices_1[i];
+	}
 }
