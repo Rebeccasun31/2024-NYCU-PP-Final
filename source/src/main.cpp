@@ -106,7 +106,7 @@ int main() {
     GLint colorLoc = glGetUniformLocation(shaderProgram, "ourColor");
 
     // camera
-	Camera camera(glm::vec3(0.0f, 100.0f, 180.0f));
+	Camera camera(glm::vec3(0.0f, 1000.0f, 1800.0f));
 	camera.initialize(static_cast<float>((float)SCR_WIDTH) / (float)SCR_HEIGHT);
 
     // render loop
@@ -146,6 +146,7 @@ int main() {
         tmp = points1;
 		points1 = points2;
 		points2 = tmp;
+        // std::cout << "0: " << points1[0]._sz << " 1: " << points1[1]._sz << '\n';
 
         glUseProgram(shaderProgram);
 		for (int i = 0; i < POINT_CNT; i++) {
@@ -382,15 +383,15 @@ void init() {
     earthVAO = modelVAO(*earthObject);
     cubeVAO = modelVAO(*cubeObject);
 
-    // vertices_1[0] = point(0, 0, 0, 255, 255, 255, 20, POINT_MASS_MAX * 100, 0, 0, 0);
-    // vertices_2[0] = vertices_1[0];
+    vertices_1[0] = point(0, 0, 0, 255, 255, 255, 100, POINT_MASS_MAX, 0, 0, 10.0f, 0);
+    vertices_2[0] = vertices_1[0];
 
-    // vertices_1[1] = point(-100, 0, 0, 255, 255, 255, 2, 10, 0, sqrt(GRAVITATIONAL_G * POINT_MASS_MAX * 100 / 100), 0);
-    // vertices_2[1] = vertices_1[1];
+    vertices_1[1] = point(0, 0, 100, 255, 255, 255, 50, 50, 0, 0, -10.0f, 2);
+    vertices_2[1] = vertices_1[1];
 
-    for (int i = 1; i < POINT_CNT; ++i) {
-		unsigned int seed = SEED;
-		vertices_1[i] = point(seed);
-		vertices_2[i] = vertices_1[i];
-	}
+    // for (int i = 0; i < POINT_CNT; ++i) {
+	// 	unsigned int seed = SEED;
+	// 	vertices_1[i] = point(seed);
+	// 	vertices_2[i] = vertices_1[i];
+	// }
 }

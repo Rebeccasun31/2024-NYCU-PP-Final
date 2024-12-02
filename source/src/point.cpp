@@ -56,4 +56,20 @@ point::point(float x, float y, float z, float r, float g, float b, float size,
 	float mass, float sx, float sy, float sz, int character) :
 	_x(x), _y(y), _z(z), _r(r), _g(g), _b(b), _size(size), _mass(mass),
 	_sx(sx), _sy(sy), _sz(sz), _character(character) {
+
+	if (_character == 0) {
+		_r = 1.0;
+		_g = 0.0;
+		_b = 0.0;
+	}
+	else if (_character == 1) {
+		_r = 0.0;
+		_g = 0.0;
+		_b = 1.0;
+	}
+	else {
+		_r = 1.0;
+		_g = 1.0;
+		_b = 0.0;
+	}
 }
