@@ -23,6 +23,7 @@ static void _nBodyCalculate(const point *currpoints, point *newpoint, int i, dou
 
 	for (int j = 0; j < POINT_CNT; ++j) {
 		if (i == j) continue;
+		if (currpoints[j]._mass == 0.0f) continue;
 		// std::cout<<"\n\n\n\n\n";
 		float rx;
 		float ry;
@@ -97,10 +98,9 @@ static void _nBodyCollapse(const point *currpoints, point *newpoint, int i, doub
 	float epi = 0.0000000000001;
 	float r = currpoints[i]._size / 2;
 
-	bool collapse = false;
-
 	for (int j = 0; j < POINT_CNT; ++j) {
 		if (i == j) continue;
+		if (currpoints[j]._mass == 0.0f) continue;
 
 		float rx;
 		float ry;
@@ -117,24 +117,38 @@ static void _nBodyCollapse(const point *currpoints, point *newpoint, int i, doub
 		len = sqrt(lenpow2);
 		
 		if (len <= dis) {
-			float sum_m = currpoints[i]._mass + currpoints[j]._mass;
-			float diff_m = currpoints[i]._mass - currpoints[j]._mass;
-			// Update speed
-			newpoint->_sx = (diff_m * currpoints[i]._sx + 2 * currpoints[j]._mass * currpoints[j]._sx) / sum_m;
-			newpoint->_sy = (diff_m * currpoints[i]._sy + 2 * currpoints[j]._mass * currpoints[j]._sy) / sum_m;
-			newpoint->_sz = (diff_m * currpoints[i]._sz + 2 * currpoints[j]._mass * currpoints[j]._sz) / sum_m;
+			// collapse: 0, be eaten: 1, eat: 2
+			int diff_char = currpoints[i]._character - currpoints[j]._character;
+			if (diff_char < 0) diff_char += 3;
 
-			// std::cout << i << ": " << "dis: " << dis << " len: " << len << " sz: " << newpoint->_sz << '\n';
-			collapse = true;
+			// collapse
+			if (diff_char == 0) {
+				float sum_m = currpoints[i]._mass + currpoints[j]._mass;
+				float diff_m = currpoints[i]._mass - currpoints[j]._mass;
+				// Update speed
+				newpoint->_sx = (diff_m * currpoints[i]._sx + 2 * currpoints[j]._mass * currpoints[j]._sx) / sum_m;
+				newpoint->_sy = (diff_m * currpoints[i]._sy + 2 * currpoints[j]._mass * currpoints[j]._sy) / sum_m;
+				newpoint->_sz = (diff_m * currpoints[i]._sz + 2 * currpoints[j]._mass * currpoints[j]._sz) / sum_m;
+			}
+			// be eaten
+			else if (diff_char == 1) {
+				newpoint->_mass = 0;
+				newpoint->_size = 0;
+			}
+			// eat
+			else if (diff_char == 2) {
+				newpoint->_mass += currpoints[j]._mass;
+				// M1/s1 = M2/s2, s2 = M2s1/M1
+				newpoint->_size = newpoint->_mass * currpoints[i]._size / currpoints[i]._mass;
+
+				newpoint->_sx = (currpoints[i]._sx * currpoints[i]._mass + currpoints[j]._sx * currpoints[j]._mass) / newpoint->_mass;
+				newpoint->_sy = (currpoints[i]._sy * currpoints[i]._mass + currpoints[j]._sy * currpoints[j]._mass) / newpoint->_mass;
+				newpoint->_sz = (currpoints[i]._sz * currpoints[i]._mass + currpoints[j]._sz * currpoints[j]._mass) / newpoint->_mass;
+			}
+
+			// std::cout << i << ": diff_char: " << diff_char << " dis: " << dis << " len: " << len << " mass: " << newpoint->_mass << '\n';
 			break;
 		}
-	}
-
-	if (!collapse) {
-		// Copy speed
-		newpoint->_sx = currpoints[i]._sx;
-		newpoint->_sy = currpoints[i]._sy;
-		newpoint->_sz = currpoints[i]._sz;
 	}
 
 	// Update position
@@ -147,14 +161,21 @@ void nBodyCalculateSerial(const point *currpoints, point *newpoints, double dt)
 {
 	point vertices_tmp[POINT_CNT];
 	point *tmp = vertices_tmp;
-	for (int i = 0; i < POINT_CNT; ++i) {
-		vertices_tmp[i] = currpoints[i];
-	}
 
 	for (int i = 0; i < POINT_CNT; ++i) {
+		vertices_tmp[i] = currpoints[i];
+		if (currpoints[i]._mass == 0.0f) {
+			continue;
+		}
+		// std::cout << "nbodycalculate: " << i << ": " << currpoints[i]._mass << '\n';
 		_nBodyCalculate(currpoints, &vertices_tmp[i], i, dt);
 	}
 	for (int i = 0; i < POINT_CNT; ++i) {
+		newpoints[i] = vertices_tmp[i];
+		if (vertices_tmp[i]._mass == 0.0f) {
+			continue;
+		}
+		// std::cout << "nbodycollapse: " << i << ": " << vertices_tmp[i]._mass << '\n';
 		_nBodyCollapse(vertices_tmp, &newpoints[i], i, dt);
 	}
 }

@@ -106,7 +106,7 @@ int main() {
     GLint colorLoc = glGetUniformLocation(shaderProgram, "ourColor");
 
     // camera
-	Camera camera(glm::vec3(0.0f, 1000.0f, 1800.0f));
+	Camera camera(glm::vec3(0.0f, 100.0f, 180.0f));
 	camera.initialize(static_cast<float>((float)SCR_WIDTH) / (float)SCR_HEIGHT);
 
     // render loop
@@ -146,11 +146,12 @@ int main() {
         tmp = points1;
 		points1 = points2;
 		points2 = tmp;
-        // std::cout << "0: " << points1[0]._sz << " 1: " << points1[1]._sz << '\n';
+        // std::cout << "-0: " << points1[0]._mass << " 1: " << points1[1]._mass << '\n';
 
         glUseProgram(shaderProgram);
 		for (int i = 0; i < POINT_CNT; i++) {
-            // std::cout << points1[i]._x << points1[i]._y << points1[i]._z <<'\n';
+            if (points1[i]._mass == 0.0f) continue;
+            // std::cout << "render: " << i << '\n';
             cubeModel = glm::translate(base, glm::vec3(points1[i]._x, points1[i]._y, points1[i]._z));
             cubeModel = glm::scale(cubeModel, glm::vec3(points1[i]._size, points1[i]._size, points1[i]._size));
 
@@ -383,15 +384,18 @@ void init() {
     earthVAO = modelVAO(*earthObject);
     cubeVAO = modelVAO(*cubeObject);
 
-    vertices_1[0] = point(0, 0, 0, 255, 255, 255, 100, POINT_MASS_MAX, 0, 0, 10.0f, 0);
-    vertices_2[0] = vertices_1[0];
+    // vertices_1[0] = point(200, 0, 0, 255, 255, 255, 20, 50, -5.0f, 0, 0, 0);
+    // vertices_2[0] = vertices_1[0];
 
-    vertices_1[1] = point(0, 0, 100, 255, 255, 255, 50, 50, 0, 0, -10.0f, 2);
-    vertices_2[1] = vertices_1[1];
+    // vertices_1[1] = point(0, 200, 0, 255, 255, 255, 20, 50, 0, -5.0f, 0, 1);
+    // vertices_2[1] = vertices_1[1];
 
-    // for (int i = 0; i < POINT_CNT; ++i) {
-	// 	unsigned int seed = SEED;
-	// 	vertices_1[i] = point(seed);
-	// 	vertices_2[i] = vertices_1[i];
-	// }
+    // vertices_1[2] = point(0, 0, 200, 255, 255, 255, 20, 50, 0, 0, -5.0f, 2);
+    // vertices_2[2] = vertices_1[2];
+
+    for (int i = 0; i < POINT_CNT; ++i) {
+		unsigned int seed = SEED;
+		vertices_1[i] = point(seed);
+		vertices_2[i] = vertices_1[i];
+	}
 }

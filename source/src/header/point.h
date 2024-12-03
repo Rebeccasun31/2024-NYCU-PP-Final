@@ -3,11 +3,11 @@
 #define SEED 0xdeadbeef - 0x55665566 * i
 #define GRAVITATIONAL_G 6.6743
 #define DELTA_TIME_MUL 100
-#define POINT_CNT 2
-#define POINT_XYZ_MAX  1000.0
-#define POINT_SIZE_MAX 50.0
-#define POINT_MASS_MAX 100.0
-#define POINT_SPEED_MAX 100.0
+#define POINT_CNT 1000
+#define POINT_XYZ_MAX  cbrt(POINT_CNT) * 50
+#define POINT_SIZE_MAX 5.0
+#define POINT_MASS_MAX 50.0
+#define POINT_SPEED_MAX 50.0
 
 
 typedef struct point point;
@@ -29,5 +29,6 @@ struct point
     float _sy;
     float _sz;
     float _mass;
+    // 0: Chiikawa, 1: Hachiware, 2: Usagi
     int _character;
 };
