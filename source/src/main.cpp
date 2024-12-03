@@ -4,6 +4,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <bits/stdc++.h>
+#include <chrono>
 
 #include "./header/Object.h"
 #include "./header/stb_image.h"
@@ -17,6 +18,8 @@
 static point vertices_1[POINT_CNT];
 static point vertices_2[POINT_CNT];
 point *points1 = vertices_1, *points2 = vertices_2;
+int cnt = 0;
+double total_time = 0.0f;
 
 void framebufferSizeCallback(GLFWwindow *window, int width, int height);
 void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
@@ -142,7 +145,19 @@ int main() {
         glUseProgram(0);
 
         // nbody
-        nBodyCalculateSerial(points1, points2, dt * DELTA_TIME_MUL);
+        auto start = std::chrono::high_resolution_clock::now();
+        // nBodyCalculateSerial(points1, points2, dt * DELTA_TIME_MUL);
+        nBodyCalculateOMP(points1, points2, dt * DELTA_TIME_MUL);
+        auto end = std::chrono::high_resolution_clock::now();
+        total_time += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        cnt += 1;
+
+        if (cnt == 500){
+            std::cout << "average cost time: " << total_time / (double) cnt << "ms" << '\n';
+            return 0;
+        }
+
+
         tmp = points1;
 		points1 = points2;
 		points2 = tmp;
@@ -346,7 +361,9 @@ glm::vec3 HSV2RGB(glm::vec3 hsv) {
 
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    
+    // if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
+    //     std::cout << "average cost time: " << (total_time / (double)cnt) << "ms" << '\n';
+    // }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

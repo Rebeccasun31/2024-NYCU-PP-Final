@@ -1,5 +1,6 @@
 #include <math.h>
 #include <iostream>
+#include <omp.h>
 
 #include "./header/nbody.h"
 #include "./header/point.h"
@@ -157,26 +158,31 @@ static void _nBodyCollapse(const point *currpoints, point *newpoint, int i, doub
 	newpoint->_z = currpoints[i]._z + newpoint->_sz * dt;
 }
 
-void nBodyCalculateSerial(const point *currpoints, point *newpoints, double dt)
+void nBodyCalculateOMP(const point *currpoints, point *newpoints, double dt)
 {
 	point vertices_tmp[POINT_CNT];
 	point *tmp = vertices_tmp;
-	
-	for (int i = 0; i < POINT_CNT; ++i) {
-		vertices_tmp[i] = currpoints[i];
-		if (currpoints[i]._mass == 0.0f) {
-			continue;
+	// std::cout<<"here\n";
+	#pragma omp parallel private(currpoints)
+	{
+		#pragma omp for schedule(dynamic) 
+		for (int i = 0; i < POINT_CNT; ++i) {
+			vertices_tmp[i] = currpoints[i];
+			if (currpoints[i]._mass == 0.0f) {
+				continue;
+			}
+			// std::cout << "nbodycalculate: " << i << ": " << currpoints[i]._mass << '\n';
+			_nBodyCalculate(currpoints, &vertices_tmp[i], i, dt);
 		}
-		// std::cout << "nbodycalculate: " << i << ": " << currpoints[i]._mass << '\n';
-		_nBodyCalculate(currpoints, &vertices_tmp[i], i, dt);
-	}
 
-	for (int i = 0; i < POINT_CNT; ++i) {
-		newpoints[i] = vertices_tmp[i];
-		if (vertices_tmp[i]._mass == 0.0f) {
-			continue;
+		#pragma omp for schedule(dynamic) 
+		for (int i = 0; i < POINT_CNT; ++i) {
+			newpoints[i] = vertices_tmp[i];
+			if (vertices_tmp[i]._mass == 0.0f) {
+				continue;
+			}
+			// std::cout << "nbodycollapse: " << i << ": " << vertices_tmp[i]._mass << '\n';
+			_nBodyCollapse(vertices_tmp, &newpoints[i], i, dt);
 		}
-		// std::cout << "nbodycollapse: " << i << ": " << vertices_tmp[i]._mass << '\n';
-		_nBodyCollapse(vertices_tmp, &newpoints[i], i, dt);
 	}
 }
