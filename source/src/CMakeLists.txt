@@ -5,6 +5,7 @@ add_executable(2024_PP_Final_Group11
 "nbody_serial.cpp"
 "nbody_omp.cpp"
 "nbody_mpi.cpp"
+"nbody_cuda.cu"
 "camera.cpp"
 ) #列所有的cpp
 

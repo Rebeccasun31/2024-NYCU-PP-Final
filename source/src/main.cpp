@@ -242,6 +242,9 @@ int main(int argc, char* argv[]) {
             cur_recv += cur_end_i - cur_start_i;
         }
 #endif
+#ifdef USE_CUDA
+        nBodyCalculateCUDA(points1, points2, dt * DELTA_TIME_MUL);
+#endif
         auto end = std::chrono::high_resolution_clock::now();
         total_time += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         cnt += 1;
