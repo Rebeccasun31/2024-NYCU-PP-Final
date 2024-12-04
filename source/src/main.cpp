@@ -12,11 +12,15 @@
 #include "./header/nbody.h"
 #include "./header/camera.h"
 
+#ifdef USE_OMP
+#include <omp.h>
+#include <string>
+#endif
+
+#ifdef USE_MPI
 #include "C:/Program Files (x86)/Microsoft SDKs/MPI/Include/mpi.h"
 int world_rank, world_size;
-
-#define ANGEL_TO_RADIAN(x) (float)((x)*M_PI / 180.0f)
-
+#endif
 
 static point vertices_1[POINT_CNT];
 static point vertices_2[POINT_CNT];
@@ -29,11 +33,9 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods
 unsigned int createShader(const string &filename, const string &type);
 unsigned int createProgram(unsigned int vertexShader, unsigned int fragmentShader);
 unsigned int modelVAO(Object &model);
-unsigned int loadTexture(const string *tFileName);
+unsigned int loadTexture(const string &filename);
 glm::vec3 HSV2RGB(glm::vec3 hsv); 
 void init();
-void nextdrawCircle(glm::quat rota, glm::vec3 *rotated, glm::vec3 *beforerotate);
-void drawCircle(float px, float py, float pz, float R);
 
 // settings
 int SCR_WIDTH = 1600;
@@ -57,181 +59,266 @@ const int rotateEarthSpeed = 30;
 // You can use these parameters
 float rotateEarthDegree = 0;
 
-int main() {
-    // MPI
+int main(int argc, char* argv[]) {
+
+#ifdef USE_OMP
+    if (argc >= 2) {
+        omp_set_num_threads(std::stoi(argv[1]));
+    } 
+#endif
+
+#ifdef USE_MPI
     MPI_Init(nullptr, nullptr);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-    std::cout << "size: " << world_size << '\n';
+    MPI_Datatype mpi_point_type;
+    vertices_1[0] = point();
+
+    int block_lengths[12] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+    MPI_Datatype types[12] = {
+        MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, // _x, _y, _z
+        MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, // _r, _g, _b
+        MPI_FLOAT,                       // _size
+        MPI_FLOAT,                       // _mass
+        MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, // _sx, _sy, _sz
+        MPI_INT                          // _character
+    };
+
+    // 計算偏移量
+    MPI_Aint base_address, displacements[12];
+    MPI_Get_address(&vertices_1[0], &base_address);
+    MPI_Get_address(&vertices_1[0]._x, &displacements[0]);
+    MPI_Get_address(&vertices_1[0]._y, &displacements[1]);
+    MPI_Get_address(&vertices_1[0]._z, &displacements[2]);
+    MPI_Get_address(&vertices_1[0]._r, &displacements[3]);
+    MPI_Get_address(&vertices_1[0]._g, &displacements[4]);
+    MPI_Get_address(&vertices_1[0]._b, &displacements[5]);
+    MPI_Get_address(&vertices_1[0]._size, &displacements[6]);
+    MPI_Get_address(&vertices_1[0]._mass, &displacements[7]);
+    MPI_Get_address(&vertices_1[0]._sx, &displacements[8]);
+    MPI_Get_address(&vertices_1[0]._sy, &displacements[9]);
+    MPI_Get_address(&vertices_1[0]._sz, &displacements[10]);
+    MPI_Get_address(&vertices_1[0]._character, &displacements[11]);
+
+    for (int i = 0; i < 12; ++i) {
+        displacements[i] -= base_address;
+    }
+
+    MPI_Type_create_struct(12, block_lengths, displacements, types, &mpi_point_type);
+    MPI_Type_commit(&mpi_point_type);
+
+    int point_cnt_per_process = POINT_CNT / world_size;
+	int start_i = point_cnt_per_process * world_rank;
+	int end_i = (world_rank == world_size - 1) ? POINT_CNT : (start_i + point_cnt_per_process);
 
     if (world_rank != 0) {
+        point vertices_tmp[end_i - start_i];
+        point *points_tmp = vertices_tmp;
+
         double dt;
         while (true) {
-            // std::cout << "rank: " << world_rank << '\n';
             MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-            std::cout << "rank: " << world_rank << " dt= " << dt << '\n';
             if (dt == -1.0) {
                 MPI_Finalize();
                 return 0;
             }
-            nBodyCalculateMPI(points1, points2, dt * DELTA_TIME_MUL);
-            MPI_Barrier(MPI_COMM_WORLD);
+            MPI_Bcast(points1, POINT_CNT, mpi_point_type, 0, MPI_COMM_WORLD);
+            nBodyCalculateMPI(points1, points_tmp, dt * DELTA_TIME_MUL, start_i, end_i);
+            MPI_Send(points_tmp, end_i - start_i, mpi_point_type, 0, 0, MPI_COMM_WORLD);
         }
     }
-    else {
-        // glfw: initialize and configure
-        glfwInit();
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
 
-        // glfw window creation
-        GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "PP-Final-Group11", NULL, NULL);
-        if (window == NULL) {
-            std::cout << "Failed to create GLFW window" << std::endl;
-            glfwTerminate();
-            return -1;
+    // glfw: initialize and configure
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    // glfw window creation
+    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "PP-Final-Group11", NULL, NULL);
+    if (window == NULL) {
+        std::cout << "Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+    glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+    glfwSetKeyCallback(window, keyCallback);
+    glfwSwapInterval(1);
+
+    // glad: load all OpenGL function pointers
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        std::cout << "Failed to initialize GLAD" << std::endl;
+        return -1;
+    }
+
+    // Initialize Object, Shader, Texture, VAO, VBO
+    init();
+
+    // Enable depth test, face culling
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CCW);
+    glCullFace(GL_BACK);
+
+    // Set viewport
+    glfwGetFramebufferSize(window, &SCR_WIDTH, &SCR_HEIGHT);
+    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
+    // render loop variables
+    double dt = 0.0;
+    double lastTime = glfwGetTime();
+    double currentTime;
+
+    GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
+    GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
+    GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+
+    GLint textureLoc = glGetUniformLocation(shaderProgram, "ourTexture");
+    GLint colorLoc = glGetUniformLocation(shaderProgram, "ourColor");
+
+    // camera
+    Camera camera(glm::vec3(0.0f, 100.0f, 180.0f));
+    camera.initialize(static_cast<float>((float)SCR_WIDTH) / (float)SCR_HEIGHT);
+
+    // render loop
+    while (!glfwWindowShouldClose(window)) {
+        point* tmp;
+        // render
+        glClearColor(0 / 255.0, 0 / 255.0, 0 / 255.0, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        camera.move(window);
+        // glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 100.0f, 180.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+        // glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
+
+        glm::mat4 base(1.0f), earthModel(1.0f), cubeModel(1.0f);
+
+        // earth
+        earthModel = glm::rotate(earthModel, glm::radians(rotateEarthDegree), glm::vec3(0.0f, 1.0f, 0.0f));
+        earthModel = glm::scale(earthModel, glm::vec3(10.0f, 10.0f, 10.0f));
+
+        glUseProgram(shaderProgram);
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(earthModel));
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, camera.getViewMatrix());
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, camera.getProjectionMatrix());
+
+        glUniform1i(textureLoc, 0);
+        glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(0.0f, 0.0f, 0.0f)));
+
+        glBindVertexArray(earthVAO);
+        glDrawArrays(GL_TRIANGLES, 0, earthObject->positions.size() / 3);
+        glBindVertexArray(0);
+
+        glUseProgram(0);
+
+        // nbody
+        auto start = std::chrono::high_resolution_clock::now();
+#ifdef USE_SERIAL
+        nBodyCalculateSerial(points1, points2, dt * DELTA_TIME_MUL);
+#endif
+#ifdef USE_OMP
+        nBodyCalculateOMP(points1, points2, dt * DELTA_TIME_MUL);
+#endif
+#ifdef USE_MPI
+        // std::cout << "[Bcast send] rank: " << world_rank << " dt: " << dt << " p0: " << points1[0]._sx << '\n';
+
+        MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Bcast(points1, POINT_CNT, mpi_point_type, 0, MPI_COMM_WORLD);
+        nBodyCalculateMPI(points1, points2, dt * DELTA_TIME_MUL, start_i, end_i);
+
+        // std::cout << "[Nbody] rank: " << world_rank << " dt: " << dt << " p0: " << points1[0]._sx << '\n';
+
+        int cur_recv = end_i;
+        for (int i = 1; i < world_size; i++) {
+            int cur_start_i = point_cnt_per_process * i;
+	        int cur_end_i = (i == world_size - 1) ? POINT_CNT : (cur_start_i + point_cnt_per_process);
+            MPI_Recv(&points2[cur_recv], cur_end_i - cur_start_i, mpi_point_type, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            // std::cout << "[Recv] rank: " << world_rank << " dt: " << dt << " pi: " << points1[i]._sx << '\n';
+            cur_recv += cur_end_i - cur_start_i;
         }
-        glfwMakeContextCurrent(window);
-        glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-        glfwSetKeyCallback(window, keyCallback);
-        glfwSwapInterval(1);
+#endif
+        auto end = std::chrono::high_resolution_clock::now();
+        total_time += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        cnt += 1;
 
-        // glad: load all OpenGL function pointers
-        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-            std::cout << "Failed to initialize GLAD" << std::endl;
-            return -1;
+        if (cnt >= 500) {
+#ifdef USE_SERIAL
+            std::cout << "[serial]\n";
+#endif
+#ifdef USE_OMP
+            int num_threads;
+            int num_processors;
+            #pragma omp parallel
+            {
+                num_threads = omp_get_num_threads();
+                num_processors = omp_get_num_procs();
+            }
+            std::cout << "[OpenMP] Number of Threads / Processors: " << num_threads << " / " << num_processors << '\n';
+#endif
+#ifdef USE_MPI
+            dt = -1.0;
+            MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            MPI_Finalize();
+            std::cout << "[MPI] Number of Processors: " << world_size << '\n';
+#endif
+            std::cout << "Number of Points: " << POINT_CNT << '\n';
+            std::cout << "N-Body Average Elapsed Time: " << total_time / (double) cnt << " ms\n\n";
+            return 0;
         }
 
-        // Initialize Object, Shader, Texture, VAO, VBO
-        init();
+        tmp = points1;
+        points1 = points2;
+        points2 = tmp;
+        // std::cout << "-0: " << points1[0]._mass << " 1: " << points1[1]._mass << '\n';
 
-        // Enable depth test, face culling
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
-        glEnable(GL_CULL_FACE);
-        glFrontFace(GL_CCW);
-        glCullFace(GL_BACK);
+        glUseProgram(shaderProgram);
+        for (int i = 0; i < POINT_CNT; i++) {
+            if (points1[i]._mass == 0.0f) continue;
+            // std::cout << "render: " << i << '\n';
+            cubeModel = glm::translate(base, glm::vec3(points1[i]._x, points1[i]._y, points1[i]._z));
+            cubeModel = glm::scale(cubeModel, glm::vec3(points1[i]._size, points1[i]._size, points1[i]._size));
 
-        // Set viewport
-        glfwGetFramebufferSize(window, &SCR_WIDTH, &SCR_HEIGHT);
-        glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-
-        // render loop variables
-        double dt = 0.0;
-        double lastTime = glfwGetTime();
-        double currentTime;
-
-        GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
-        GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
-        GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-
-        GLint textureLoc = glGetUniformLocation(shaderProgram, "ourTexture");
-        GLint colorLoc = glGetUniformLocation(shaderProgram, "ourColor");
-
-        // camera
-        Camera camera(glm::vec3(0.0f, 100.0f, 180.0f));
-        camera.initialize(static_cast<float>((float)SCR_WIDTH) / (float)SCR_HEIGHT);
-
-        // render loop
-        while (!glfwWindowShouldClose(window)) {
-            point* tmp;
-            // render
-            glClearColor(0 / 255.0, 0 / 255.0, 0 / 255.0, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            
-            camera.move(window);
-            // glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 100.0f, 180.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-            // glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
-
-            glm::mat4 base(1.0f), earthModel(1.0f), cubeModel(1.0f);
-
-            // earth
-            earthModel = glm::rotate(earthModel, glm::radians(rotateEarthDegree), glm::vec3(0.0f, 1.0f, 0.0f));
-            earthModel = glm::scale(earthModel, glm::vec3(10.0f, 10.0f, 10.0f));
-
-            glUseProgram(shaderProgram);
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(earthModel));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubeModel));
             glUniformMatrix4fv(viewLoc, 1, GL_FALSE, camera.getViewMatrix());
             glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, camera.getProjectionMatrix());
 
-            glUniform1i(textureLoc, 1);
-            glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(0.0f, 0.0f, 0.0f)));
+            glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(points1[i]._r, points1[i]._g, points1[i]._b)));
 
-            glBindVertexArray(earthVAO);
-            glDrawArrays(GL_TRIANGLES, 0, earthObject->positions.size() / 3);
+            glBindVertexArray(cubeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, cubeObject->positions.size() / 3);
             glBindVertexArray(0);
+        }
+        glUseProgram(0);
 
-            glUseProgram(0);
+        // Status update
+        currentTime = glfwGetTime();
+        dt = currentTime - lastTime;
+        lastTime = currentTime;
 
-            // nbody
-            auto start = std::chrono::high_resolution_clock::now();
-            // nBodyCalculateSerial(points1, points2, dt * DELTA_TIME_MUL);
-            // nBodyCalculateOMP(points1, points2, dt * DELTA_TIME_MUL);
-            MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-            nBodyCalculateMPI(points1, points2, dt * DELTA_TIME_MUL);
-            MPI_Barrier(MPI_COMM_WORLD);
-            auto end = std::chrono::high_resolution_clock::now();
-            total_time += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-            cnt += 1;
-
-            if (cnt >= 500) {
-                std::cout << "average cost time: " << total_time / (double) cnt << " ms\n";
-                dt = -1.0;
-                MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-                MPI_Finalize();
-                return 0;
-            }
-
-
-            tmp = points1;
-            points1 = points2;
-            points2 = tmp;
-            // std::cout << "-0: " << points1[0]._mass << " 1: " << points1[1]._mass << '\n';
-
-            glUseProgram(shaderProgram);
-            for (int i = 0; i < POINT_CNT; i++) {
-                if (points1[i]._mass == 0.0f) continue;
-                // std::cout << "render: " << i << '\n';
-                cubeModel = glm::translate(base, glm::vec3(points1[i]._x, points1[i]._y, points1[i]._z));
-                cubeModel = glm::scale(cubeModel, glm::vec3(points1[i]._size, points1[i]._size, points1[i]._size));
-
-                glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubeModel));
-                glUniformMatrix4fv(viewLoc, 1, GL_FALSE, camera.getViewMatrix());
-                glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, camera.getProjectionMatrix());
-
-                glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(points1[i]._r, points1[i]._g, points1[i]._b)));
-
-                glBindVertexArray(cubeVAO);
-                glDrawArrays(GL_TRIANGLES, 0, cubeObject->positions.size() / 3);
-                glBindVertexArray(0);
-            }
-            glUseProgram(0);
-
-            // Status update
-            currentTime = glfwGetTime();
-            dt = currentTime - lastTime;
-            lastTime = currentTime;
-
-            rotateEarthDegree += (float)rotateEarthSpeed * dt;
-            if (rotateEarthDegree >= 360) {
-                rotateEarthDegree -= 360;
-            }
-
-            // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-            glfwSwapBuffers(window);
-            glfwPollEvents();
+        rotateEarthDegree += (float)rotateEarthSpeed * dt;
+        if (rotateEarthDegree >= 360) {
+            rotateEarthDegree -= 360;
         }
 
-        // glfw: terminate, clearing all previously allocated GLFW resources.
-        glfwTerminate();
-
-        dt = -1.0;
-        MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        MPI_Finalize();
+        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
+        glfwSwapBuffers(window);
+        glfwPollEvents();
     }
+
+    // glfw: terminate, clearing all previously allocated GLFW resources.
+    glfwTerminate();
+
+#ifdef USE_MPI
+    dt = -1.0;
+    MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Finalize();
+#endif
+
     return 0;
 }
 
@@ -339,11 +426,8 @@ unsigned int loadTexture(const string &filename) {
     glEnable(GL_TEXTURE_2D);
 
     // use different texture unit to save more than one textures
-    if (filename.substr(filename.length() - 12) == "airplane.jpg") {
+    if (filename.substr(filename.length() - 9) == "earth.jpg") {
         glActiveTexture(GL_TEXTURE0);
-    }
-    else if (filename.substr(filename.length() - 9) == "earth.jpg") {
-        glActiveTexture(GL_TEXTURE1);
     }
 
     // create a new texture object and bind it to 2D image
@@ -407,15 +491,9 @@ void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
 }
 
 void init() {
-#if defined(__linux__) || defined(__APPLE__)
-    string dirShader = "../../source/src/shaders/";
-    string dirAsset = "../../source/src/asset/obj/";
-    string dirTexture = "../../source/src/asset/texture/";
-#else
-    string dirShader = "..\\..\\source\\src\\shaders\\";
-    string dirAsset = "..\\..\\source\\src\\asset\\obj\\";
-    string dirTexture = "..\\..\\source\\src\\asset\\texture\\";
-#endif
+    string dirShader = "source\\src\\shaders\\";
+    string dirAsset = "source\\src\\asset\\obj\\";
+    string dirTexture = "source\\src\\asset\\texture\\";
 
     // Object
     earthObject = new Object(dirAsset + "earth.obj");

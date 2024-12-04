@@ -127,21 +127,8 @@ static void _nBodyCalculate(const point *currpoints, point *newpoint, int i, dou
 	newpoint->_z = currpoints[i]._z + newpoint->_sz * dt;
 }
 
-void nBodyCalculateMPI(const point *currpoints, double dt)
+void nBodyCalculateMPI(const point *currpoints, point *newpoints, double dt, int start_i, int end_i)
 {	
-	int world_rank, world_size;
-	MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-
-	int point_cnt_per_process = POINT_CNT / world_size;
-	int start_i = point_cnt_per_process * world_rank;
-	int end_i = (world_rank == world_size - 1) ? POINT_CNT : (start_i + point_cnt_per_process);
-
-	point vertices_tmp[end_i - start_i];
-	point *newpoints = vertices_tmp;
-
-	std::cout << "rank: " << world_rank << " start: " << start_i << " end: " << end_i << '\n';
-
 	for (int i = start_i; i < end_i; ++i) {
 		newpoints[i - start_i] = currpoints[i];
 		if (currpoints[i]._mass == 0.0f) {

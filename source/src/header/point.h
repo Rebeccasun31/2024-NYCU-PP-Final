@@ -25,10 +25,10 @@ struct point
     float _g;
     float _b;
     float _size;
+    float _mass;
     float _sx; // speed
     float _sy;
     float _sz;
-    float _mass;
     // 0: Chiikawa, 1: Hachiware, 2: Usagi
     int _character;
 };
