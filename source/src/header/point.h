@@ -3,7 +3,7 @@
 #define SEED 0xdeadbeef - 0x55665566 * i
 #define GRAVITATIONAL_G 6.6743
 #define DELTA_TIME_MUL 100
-#define POINT_CNT 2500
+#define POINT_CNT 2000
 #define POINT_XYZ_MAX  cbrt(POINT_CNT) * 50
 #define POINT_SIZE_MAX 5.0
 #define POINT_MASS_MAX 50.0

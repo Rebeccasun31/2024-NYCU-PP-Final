@@ -12,6 +12,9 @@
 #include "./header/nbody.h"
 #include "./header/camera.h"
 
+#include "C:/Program Files (x86)/Microsoft SDKs/MPI/Include/mpi.h"
+int world_rank, world_size;
+
 #define ANGEL_TO_RADIAN(x) (float)((x)*M_PI / 180.0f)
 
 
@@ -55,150 +58,180 @@ const int rotateEarthSpeed = 30;
 float rotateEarthDegree = 0;
 
 int main() {
-    // glfw: initialize and configure
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    // MPI
+    MPI_Init(nullptr, nullptr);
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-    // glfw window creation
-    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "PP-Final-Group11", NULL, NULL);
-    if (window == NULL) {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return -1;
+    std::cout << "size: " << world_size << '\n';
+
+    if (world_rank != 0) {
+        double dt;
+        while (true) {
+            // std::cout << "rank: " << world_rank << '\n';
+            MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            std::cout << "rank: " << world_rank << " dt= " << dt << '\n';
+            if (dt == -1.0) {
+                MPI_Finalize();
+                return 0;
+            }
+            nBodyCalculateMPI(points1, points2, dt * DELTA_TIME_MUL);
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
     }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-    glfwSetKeyCallback(window, keyCallback);
-    glfwSwapInterval(1);
+    else {
+        // glfw: initialize and configure
+        glfwInit();
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    // glad: load all OpenGL function pointers
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cout << "Failed to initialize GLAD" << std::endl;
-        return -1;
-    }
+        // glfw window creation
+        GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "PP-Final-Group11", NULL, NULL);
+        if (window == NULL) {
+            std::cout << "Failed to create GLFW window" << std::endl;
+            glfwTerminate();
+            return -1;
+        }
+        glfwMakeContextCurrent(window);
+        glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+        glfwSetKeyCallback(window, keyCallback);
+        glfwSwapInterval(1);
 
-    // Initialize Object, Shader, Texture, VAO, VBO
-    init();
-
-    // Enable depth test, face culling
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
-    glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CCW);
-    glCullFace(GL_BACK);
-
-    // Set viewport
-    glfwGetFramebufferSize(window, &SCR_WIDTH, &SCR_HEIGHT);
-    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-
-    // render loop variables
-    double dt;
-    double lastTime = glfwGetTime();
-    double currentTime;
-
-    GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
-    GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
-    GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-
-    GLint textureLoc = glGetUniformLocation(shaderProgram, "ourTexture");
-    GLint colorLoc = glGetUniformLocation(shaderProgram, "ourColor");
-
-    // camera
-	Camera camera(glm::vec3(0.0f, 100.0f, 180.0f));
-	camera.initialize(static_cast<float>((float)SCR_WIDTH) / (float)SCR_HEIGHT);
-
-    // render loop
-    while (!glfwWindowShouldClose(window)) {
-        point* tmp;
-        // render
-        glClearColor(0 / 255.0, 0 / 255.0, 0 / 255.0, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
-		camera.move(window);
-        // glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 100.0f, 180.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-        // glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
-
-        glm::mat4 base(1.0f), earthModel(1.0f), cubeModel(1.0f);
-
-        // earth
-        earthModel = glm::rotate(earthModel, glm::radians(rotateEarthDegree), glm::vec3(0.0f, 1.0f, 0.0f));
-        earthModel = glm::scale(earthModel, glm::vec3(10.0f, 10.0f, 10.0f));
-
-        glUseProgram(shaderProgram);
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(earthModel));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, camera.getViewMatrix());
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, camera.getProjectionMatrix());
-
-        glUniform1i(textureLoc, 1);
-        glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(0.0f, 0.0f, 0.0f)));
-
-        glBindVertexArray(earthVAO);
-        glDrawArrays(GL_TRIANGLES, 0, earthObject->positions.size() / 3);
-        glBindVertexArray(0);
-
-        glUseProgram(0);
-
-        // nbody
-        auto start = std::chrono::high_resolution_clock::now();
-        // nBodyCalculateSerial(points1, points2, dt * DELTA_TIME_MUL);
-        nBodyCalculateOMP(points1, points2, dt * DELTA_TIME_MUL);
-        auto end = std::chrono::high_resolution_clock::now();
-        total_time += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        cnt += 1;
-
-        if (cnt == 500){
-            std::cout << "average cost time: " << total_time / (double) cnt << "ms" << '\n';
-            return 0;
+        // glad: load all OpenGL function pointers
+        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+            std::cout << "Failed to initialize GLAD" << std::endl;
+            return -1;
         }
 
+        // Initialize Object, Shader, Texture, VAO, VBO
+        init();
 
-        tmp = points1;
-		points1 = points2;
-		points2 = tmp;
-        // std::cout << "-0: " << points1[0]._mass << " 1: " << points1[1]._mass << '\n';
+        // Enable depth test, face culling
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
+        glEnable(GL_CULL_FACE);
+        glFrontFace(GL_CCW);
+        glCullFace(GL_BACK);
 
-        glUseProgram(shaderProgram);
-		for (int i = 0; i < POINT_CNT; i++) {
-            if (points1[i]._mass == 0.0f) continue;
-            // std::cout << "render: " << i << '\n';
-            cubeModel = glm::translate(base, glm::vec3(points1[i]._x, points1[i]._y, points1[i]._z));
-            cubeModel = glm::scale(cubeModel, glm::vec3(points1[i]._size, points1[i]._size, points1[i]._size));
+        // Set viewport
+        glfwGetFramebufferSize(window, &SCR_WIDTH, &SCR_HEIGHT);
+        glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubeModel));
+        // render loop variables
+        double dt = 0.0;
+        double lastTime = glfwGetTime();
+        double currentTime;
+
+        GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
+        GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
+        GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+
+        GLint textureLoc = glGetUniformLocation(shaderProgram, "ourTexture");
+        GLint colorLoc = glGetUniformLocation(shaderProgram, "ourColor");
+
+        // camera
+        Camera camera(glm::vec3(0.0f, 100.0f, 180.0f));
+        camera.initialize(static_cast<float>((float)SCR_WIDTH) / (float)SCR_HEIGHT);
+
+        // render loop
+        while (!glfwWindowShouldClose(window)) {
+            point* tmp;
+            // render
+            glClearColor(0 / 255.0, 0 / 255.0, 0 / 255.0, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            
+            camera.move(window);
+            // glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 100.0f, 180.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+            // glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
+
+            glm::mat4 base(1.0f), earthModel(1.0f), cubeModel(1.0f);
+
+            // earth
+            earthModel = glm::rotate(earthModel, glm::radians(rotateEarthDegree), glm::vec3(0.0f, 1.0f, 0.0f));
+            earthModel = glm::scale(earthModel, glm::vec3(10.0f, 10.0f, 10.0f));
+
+            glUseProgram(shaderProgram);
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(earthModel));
             glUniformMatrix4fv(viewLoc, 1, GL_FALSE, camera.getViewMatrix());
             glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, camera.getProjectionMatrix());
 
-            glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(points1[i]._r, points1[i]._g, points1[i]._b)));
+            glUniform1i(textureLoc, 1);
+            glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(0.0f, 0.0f, 0.0f)));
 
-            glBindVertexArray(cubeVAO);
-            glDrawArrays(GL_TRIANGLES, 0, cubeObject->positions.size() / 3);
+            glBindVertexArray(earthVAO);
+            glDrawArrays(GL_TRIANGLES, 0, earthObject->positions.size() / 3);
             glBindVertexArray(0);
-		}
-        glUseProgram(0);
 
-        // Status update
-        currentTime = glfwGetTime();
-        dt = currentTime - lastTime;
-        lastTime = currentTime;
+            glUseProgram(0);
 
-        rotateEarthDegree += (float)rotateEarthSpeed * dt;
-        if (rotateEarthDegree >= 360) {
-            rotateEarthDegree -= 360;
+            // nbody
+            auto start = std::chrono::high_resolution_clock::now();
+            // nBodyCalculateSerial(points1, points2, dt * DELTA_TIME_MUL);
+            // nBodyCalculateOMP(points1, points2, dt * DELTA_TIME_MUL);
+            MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            nBodyCalculateMPI(points1, points2, dt * DELTA_TIME_MUL);
+            MPI_Barrier(MPI_COMM_WORLD);
+            auto end = std::chrono::high_resolution_clock::now();
+            total_time += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+            cnt += 1;
+
+            if (cnt >= 500) {
+                std::cout << "average cost time: " << total_time / (double) cnt << " ms\n";
+                dt = -1.0;
+                MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+                MPI_Finalize();
+                return 0;
+            }
+
+
+            tmp = points1;
+            points1 = points2;
+            points2 = tmp;
+            // std::cout << "-0: " << points1[0]._mass << " 1: " << points1[1]._mass << '\n';
+
+            glUseProgram(shaderProgram);
+            for (int i = 0; i < POINT_CNT; i++) {
+                if (points1[i]._mass == 0.0f) continue;
+                // std::cout << "render: " << i << '\n';
+                cubeModel = glm::translate(base, glm::vec3(points1[i]._x, points1[i]._y, points1[i]._z));
+                cubeModel = glm::scale(cubeModel, glm::vec3(points1[i]._size, points1[i]._size, points1[i]._size));
+
+                glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubeModel));
+                glUniformMatrix4fv(viewLoc, 1, GL_FALSE, camera.getViewMatrix());
+                glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, camera.getProjectionMatrix());
+
+                glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(points1[i]._r, points1[i]._g, points1[i]._b)));
+
+                glBindVertexArray(cubeVAO);
+                glDrawArrays(GL_TRIANGLES, 0, cubeObject->positions.size() / 3);
+                glBindVertexArray(0);
+            }
+            glUseProgram(0);
+
+            // Status update
+            currentTime = glfwGetTime();
+            dt = currentTime - lastTime;
+            lastTime = currentTime;
+
+            rotateEarthDegree += (float)rotateEarthSpeed * dt;
+            if (rotateEarthDegree >= 360) {
+                rotateEarthDegree -= 360;
+            }
+
+            // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
+            glfwSwapBuffers(window);
+            glfwPollEvents();
         }
 
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
+        // glfw: terminate, clearing all previously allocated GLFW resources.
+        glfwTerminate();
 
-    // glfw: terminate, clearing all previously allocated GLFW resources.
-    glfwTerminate();
+        dt = -1.0;
+        MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Finalize();
+    }
     return 0;
 }
 
@@ -401,10 +434,10 @@ void init() {
     earthVAO = modelVAO(*earthObject);
     cubeVAO = modelVAO(*cubeObject);
 
-    // vertices_1[0] = point(200, 0, 0, 255, 255, 255, 20, 50, -5.0f, 0, 0, 0);
+    // vertices_1[0] = point(200, 0, 0, 255, 255, 255, 20, 10, -5.0f, 0, 0, 0);
     // vertices_2[0] = vertices_1[0];
 
-    // vertices_1[1] = point(0, 200, 0, 255, 255, 255, 20, 50, 0, -5.0f, 0, 1);
+    // vertices_1[1] = point(0, 0, 0, 255, 255, 255, 10, 5, 5.0f, 0, 0, 0);
     // vertices_2[1] = vertices_1[1];
 
     // vertices_1[2] = point(0, 0, 200, 255, 255, 255, 20, 50, 0, 0, -5.0f, 2);

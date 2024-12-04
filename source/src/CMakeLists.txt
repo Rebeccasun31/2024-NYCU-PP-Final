@@ -1,19 +1,18 @@
-add_executable(ICG_2024_HW2
+add_executable(2024_PP_Final_Group11
 "main.cpp"
 "stb_image.cpp"
 "point.cpp"
 "nbody_serial.cpp"
 "nbody_omp.cpp"
+"nbody_mpi.cpp"
 "camera.cpp"
 ) #列所有的cpp
 
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(ICG_2024_HW2
+target_link_libraries(2024_PP_Final_Group11
     PUBLIC
+    OpenMP::OpenMP_CXX
+    "${MSMPI_LIB}/msmpi.lib"
     glfw
     glm::glm
     glad
-    OpenMP::OpenMP_CXX
-    )
-endif()
+)

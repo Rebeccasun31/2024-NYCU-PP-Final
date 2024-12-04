@@ -5,6 +5,7 @@
 
 void nBodyCalculateSerial(const point *currpoints, point *newpoints, double dt);
 void nBodyCalculateOMP(const point *currpoints, point *newpoints, double dt);
+void nBodyCalculateMPI(const point *currpoints, point *newpoints, double dt);
 
 // void nBodyCalculateSerialSIMD(const point *currpoints, point *newpoints, double dt);
 
