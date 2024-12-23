@@ -30,3 +30,9 @@ Authors: 110550170 戚維凌、110550034 孫承瑞
 2. Number of Particles:
 
     In `src/header/point.h`, modify the POINT_CNT parameter.
+
+## Our Environment
+
+- Windows 11
+- CPU: Intel Core i7-10750H Processor @ 2.60GHz
+- GPU: NVIDIA GeForce GTX 1650
