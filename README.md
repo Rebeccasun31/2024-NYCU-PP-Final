@@ -3,7 +3,8 @@
 Authors: 110550170 戚維凌、110550034 孫承瑞
 
 ## Setup
-1. `git clone https://github.com/Rebeccasun31/2024-NYCU-PP-Final.git`
+
+1. `git clone https://github.com/Rebeccasun31/2024-NYCU-PP-Final.git && cd 2024-NYCU-PP-Final`
 
 2. `git submodule update --init --recursive`
 
@@ -21,6 +22,7 @@ Authors: 110550170 戚維凌、110550034 孫承瑞
     - CUDA: `"build/src/2024_PP_Final_Group11_omp.exe"`
 
 ## Options
+
 1. Parallel Method:
 
     In `src/header/nbody.h`, uncomment the method you want.
