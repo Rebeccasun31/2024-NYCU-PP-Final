@@ -4,9 +4,5 @@
 "build/src/2024_PP_Final_Group11_omp.exe" 4 >> result.txt
 "build/src/2024_PP_Final_Group11_omp.exe" 5 >> result.txt
 "build/src/2024_PP_Final_Group11_omp.exe" 6 >> result.txt
-"build/src/2024_PP_Final_Group11_omp.exe" 7 >> result.txt
-"build/src/2024_PP_Final_Group11_omp.exe" 8 >> result.txt
-"build/src/2024_PP_Final_Group11_omp.exe" 9 >> result.txt
-"build/src/2024_PP_Final_Group11_omp.exe" 10 >> result.txt
-"build/src/2024_PP_Final_Group11_omp.exe" 11 >> result.txt
-"build/src/2024_PP_Final_Group11_omp.exe" 12 >> result.txt
+
+echo "---------------------------------------------"

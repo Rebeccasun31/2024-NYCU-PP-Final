@@ -2,17 +2,19 @@ add_executable(2024_PP_Final_Group11
 "main.cpp"
 "stb_image.cpp"
 "point.cpp"
+"camera.cpp"
 "nbody_serial.cpp"
 "nbody_omp.cpp"
 "nbody_mpi.cpp"
 "nbody_cuda.cu"
-"camera.cpp"
-) #列所有的cpp
+)
 
 target_link_libraries(2024_PP_Final_Group11
     PUBLIC
     OpenMP::OpenMP_CXX
-    "${MSMPI_LIB}/msmpi.lib"
+    ${MSMPI_LIB}/msmpi.lib
+    ${CUDA_LIBRARIES}
+    -lgomp
     glfw
     glm::glm
     glad

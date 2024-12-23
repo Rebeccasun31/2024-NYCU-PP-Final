@@ -3,8 +3,7 @@
 #include <cuda.h>
 #include <stdlib.h>
 
-#include "./header/nbody.h"
-#include "./header/point.h"
+#include "./header/nbody_cuda.cuh"
 
 // #define BLOCK_SIZE 256
 
@@ -12,7 +11,7 @@ __global__ void _nBodyCalculateKernel(const point* currpoints, point* newpoints,
     int thisI = threadIdx.x + blockIdx.x * blockDim.x;
 	int thisJ = threadIdx.y + blockIdx.y * blockDim.y;
     if (thisI >= POINT_CNT || thisJ >= POINT_CNT) {
-		std::cout << "thisI, thisJ out of range : " << thisI << ' ' << thisJ << '\n';
+		// std::cout << "thisI, thisJ out of range : " << thisI << ' ' << thisJ << '\n';
 		return;
 	}
 	else if(thisI == thisJ) return;
@@ -167,6 +166,6 @@ void nBodyCalculateCUDA(const point* h_currpoints, point* h_newpoints, double dt
     // Check for any CUDA errors
     cudaError_t error = cudaGetLastError();
     if (error != cudaSuccess) {
-        std::cerr << "CUDA error: " << cudaGetErrorString(error) << std::endl;
+        // std::cerr << "CUDA error: " << cudaGetErrorString(error) << std::endl;
     }
 }

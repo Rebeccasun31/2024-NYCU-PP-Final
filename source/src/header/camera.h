@@ -25,7 +25,6 @@ private:
 	glm::vec3 up;
 	glm::vec3 right;
 
-	// TODO (optional): Change these values if your WASD or mouse move too slow or too fast.
 	constexpr static float keyboardMoveSpeed = 0.01f;
 	constexpr static float mouseMoveSpeed = 0.001f;
 

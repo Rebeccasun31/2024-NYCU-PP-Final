@@ -1,104 +1,76 @@
+[serial]
+Number of Points: 2000
+N-Body Average Elapsed Time: 74.3 ms
+---------------------------------------------
 [OpenMP] Number of Threads / Processors: 1 / 12
 Number of Points: 2000
-N-Body Average Elapsed Time: 72.95 ms
+N-Body Average Elapsed Time: 74.306 ms
 
 [OpenMP] Number of Threads / Processors: 2 / 12
 Number of Points: 2000
-N-Body Average Elapsed Time: 37.916 ms
+N-Body Average Elapsed Time: 37.53 ms
 
 [OpenMP] Number of Threads / Processors: 3 / 12
 Number of Points: 2000
-N-Body Average Elapsed Time: 30.494 ms
+N-Body Average Elapsed Time: 28.084 ms
 
 [OpenMP] Number of Threads / Processors: 4 / 12
 Number of Points: 2000
-N-Body Average Elapsed Time: 23.286 ms
+N-Body Average Elapsed Time: 22.976 ms
 
 [OpenMP] Number of Threads / Processors: 5 / 12
 Number of Points: 2000
-N-Body Average Elapsed Time: 19.592 ms
+N-Body Average Elapsed Time: 20.262 ms
 
 [OpenMP] Number of Threads / Processors: 6 / 12
 Number of Points: 2000
-N-Body Average Elapsed Time: 18.804 ms
-
-[OpenMP] Number of Threads / Processors: 7 / 12
-Number of Points: 2000
-N-Body Average Elapsed Time: 17.766 ms
-
-[OpenMP] Number of Threads / Processors: 8 / 12
-Number of Points: 2000
-N-Body Average Elapsed Time: 17.438 ms
-
-[OpenMP] Number of Threads / Processors: 9 / 12
-Number of Points: 2000
-N-Body Average Elapsed Time: 16.932 ms
-
-[OpenMP] Number of Threads / Processors: 10 / 12
-Number of Points: 2000
-N-Body Average Elapsed Time: 16.31 ms
-
-[OpenMP] Number of Threads / Processors: 11 / 12
-Number of Points: 2000
-N-Body Average Elapsed Time: 18.35 ms
-
-[OpenMP] Number of Threads / Processors: 12 / 12
-Number of Points: 2000
-N-Body Average Elapsed Time: 19.258 ms
-
-------------------------------------------------
-
+N-Body Average Elapsed Time: 18.576 ms
+---------------------------------------------
 [MPI] Number of Processors: 1
 Number of Points: 2000
-N-Body Average Elapsed Time: 73.058 ms
+N-Body Average Elapsed Time: 74.618 ms
 
 [MPI] Number of Processors: 2
 Number of Points: 2000
-N-Body Average Elapsed Time: 37.632 ms
+N-Body Average Elapsed Time: 39.818 ms
 
 [MPI] Number of Processors: 3
 Number of Points: 2000
-N-Body Average Elapsed Time: 32.794 ms
+N-Body Average Elapsed Time: 32.246 ms
 
 [MPI] Number of Processors: 4
 Number of Points: 2000
-N-Body Average Elapsed Time: 26.346 ms
+N-Body Average Elapsed Time: 26.452 ms
 
 [MPI] Number of Processors: 5
 Number of Points: 2000
-N-Body Average Elapsed Time: 22.516 ms
+N-Body Average Elapsed Time: 26.056 ms
 
 [MPI] Number of Processors: 6
 Number of Points: 2000
-N-Body Average Elapsed Time: 23.422 ms
+N-Body Average Elapsed Time: 24.006 ms
+---------------------------------------------
+[MPI] Number of Processors: 1
+Number of Points: 20000
+N-Body Average Elapsed Time: 12702 ms
 
-[MPI] Number of Processors: 7
-Number of Points: 2000
-N-Body Average Elapsed Time: 22.05 ms
+[MPI] Number of Processors: 2
+Number of Points: 20000
+N-Body Average Elapsed Time: 5813.18 ms
 
-[MPI] Number of Processors: 8
-Number of Points: 2000
-N-Body Average Elapsed Time: 20.456 ms
+[MPI] Number of Processors: 3
+Number of Points: 20000
+N-Body Average Elapsed Time: 4260.88 ms
 
-[MPI] Number of Processors: 9
-Number of Points: 2000
-N-Body Average Elapsed Time: 19.276 ms
+[MPI] Number of Processors: 4
+Number of Points: 20000
+N-Body Average Elapsed Time: 3824.98 ms
 
-[MPI] Number of Processors: 10
-Number of Points: 2000
-N-Body Average Elapsed Time: 18.21 ms
+[MPI] Number of Processors: 5
+Number of Points: 20000
+N-Body Average Elapsed Time: 3278.42 ms
 
-[MPI] Number of Processors: 11
-Number of Points: 2000
-N-Body Average Elapsed Time: 18.606 ms
-
-[MPI] Number of Processors: 12
-Number of Points: 2000
-N-Body Average Elapsed Time: 22.598 ms
-
-------------------------------------------------
-
-[serial]
-Number of Points: 2000
-N-Body Average Elapsed Time: 72.708 ms
+[MPI] Number of Processors: 6
+Number of Points: 20000
+N-Body Average Elapsed Time: 3006.57 ms
 

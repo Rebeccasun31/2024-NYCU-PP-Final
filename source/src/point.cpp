@@ -26,30 +26,25 @@ point::point(unsigned int seed) {
 	mass_x = (unif(generator) + 1.001) / 2.0;
 	_mass = mass_x * POINT_MASS_MAX;
 	_size = mass_x * POINT_SIZE_MAX;
-	// _r = 0.3 * mass_x + 0.8;
-	// _g = 1.348 * mass_x * mass_x - 0.385 * mass_x + 0.342;
-	// _b = 0.34 * mass_x * mass_x + 0.883 * mass_x - 0.07;
+
 	if (_character == 0) {
-		_r = 1.0;
+		_r = 255.0;
 		_g = 0.0;
 		_b = 0.0;
 	}
 	else if (_character == 1) {
 		_r = 0.0;
 		_g = 0.0;
-		_b = 1.0;
+		_b = 255.0;
 	}
 	else {
-		_r = 1.0;
-		_g = 1.0;
+		_r = 255.0;
+		_g = 255.0;
 		_b = 0.0;
 	}
 	_sx = unif(generator) * (1.001 - mass_x) * POINT_SPEED_MAX;
 	_sy = unif(generator) * (1.001 - mass_x) * POINT_SPEED_MAX;
 	_sz = unif(generator) * (1.001 - mass_x) * POINT_SPEED_MAX;
-	// _sx = 0.0;
-	// _sy = 0.0;
-	// _sz = 0.0;
 }
 
 point::point(float x, float y, float z, float r, float g, float b, float size,
@@ -58,18 +53,18 @@ point::point(float x, float y, float z, float r, float g, float b, float size,
 	_sx(sx), _sy(sy), _sz(sz), _character(character) {
 
 	if (_character == 0) {
-		_r = 1.0;
+		_r = 255.0;
 		_g = 0.0;
 		_b = 0.0;
 	}
 	else if (_character == 1) {
 		_r = 0.0;
 		_g = 0.0;
-		_b = 1.0;
+		_b = 255.0;
 	}
 	else {
-		_r = 1.0;
-		_g = 1.0;
+		_r = 255.0;
+		_g = 255.0;
 		_b = 0.0;
 	}
 }

@@ -29,7 +29,6 @@ int cnt = 0;
 double total_time = 0.0f;
 
 void framebufferSizeCallback(GLFWwindow *window, int width, int height);
-void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
 unsigned int createShader(const string &filename, const string &type);
 unsigned int createProgram(unsigned int vertexShader, unsigned int fragmentShader);
 unsigned int modelVAO(Object &model);
@@ -44,20 +43,11 @@ int SCR_HEIGHT = 900;
 // Shader
 unsigned int vertexShader, fragmentShader, shaderProgram;
 
-// Texture
-unsigned int earthTexture;
-
 // VAO, VBO
-unsigned int earthVAO, cubeVAO;
+unsigned int cubeVAO, chiikawaVAO, hachiwareVAO, usagiVAO;
 
 // Objects to display
-Object *earthObject, *cubeObject;
-
-// Constants you may need
-const int rotateEarthSpeed = 30;
-
-// You can use these parameters
-float rotateEarthDegree = 0;
+Object *cubeObject, *chiikawaObject, *hachiwareObject, *usagiObject;
 
 int main(int argc, char* argv[]) {
 
@@ -145,7 +135,6 @@ int main(int argc, char* argv[]) {
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-    glfwSetKeyCallback(window, keyCallback);
     glfwSwapInterval(1);
 
     // glad: load all OpenGL function pointers
@@ -177,7 +166,6 @@ int main(int argc, char* argv[]) {
     GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
     GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 
-    GLint textureLoc = glGetUniformLocation(shaderProgram, "ourTexture");
     GLint colorLoc = glGetUniformLocation(shaderProgram, "ourColor");
 
     // camera
@@ -192,29 +180,7 @@ int main(int argc, char* argv[]) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         camera.move(window);
-        // glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 100.0f, 180.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-        // glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
-
         glm::mat4 base(1.0f), earthModel(1.0f), cubeModel(1.0f);
-
-        // earth
-        earthModel = glm::rotate(earthModel, glm::radians(rotateEarthDegree), glm::vec3(0.0f, 1.0f, 0.0f));
-        earthModel = glm::scale(earthModel, glm::vec3(10.0f, 10.0f, 10.0f));
-
-        glUseProgram(shaderProgram);
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(earthModel));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, camera.getViewMatrix());
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, camera.getProjectionMatrix());
-
-        glUniform1i(textureLoc, 0);
-        glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(0.0f, 0.0f, 0.0f)));
-
-        glBindVertexArray(earthVAO);
-        glDrawArrays(GL_TRIANGLES, 0, earthObject->positions.size() / 3);
-        glBindVertexArray(0);
-
-        glUseProgram(0);
 
         // nbody
         auto start = std::chrono::high_resolution_clock::now();
@@ -248,8 +214,8 @@ int main(int argc, char* argv[]) {
         auto end = std::chrono::high_resolution_clock::now();
         total_time += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         cnt += 1;
-
-        if (cnt >= 500) {
+/*
+        if (cnt >= 100) {
 #ifdef USE_SERIAL
             std::cout << "[serial]\n";
 #endif
@@ -273,7 +239,7 @@ int main(int argc, char* argv[]) {
             std::cout << "N-Body Average Elapsed Time: " << total_time / (double) cnt << " ms\n\n";
             return 0;
         }
-
+*/
         tmp = points1;
         points1 = points2;
         points2 = tmp;
@@ -285,15 +251,32 @@ int main(int argc, char* argv[]) {
             // std::cout << "render: " << i << '\n';
             cubeModel = glm::translate(base, glm::vec3(points1[i]._x, points1[i]._y, points1[i]._z));
             cubeModel = glm::scale(cubeModel, glm::vec3(points1[i]._size, points1[i]._size, points1[i]._size));
+            cubeModel = glm::rotate(cubeModel, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubeModel));
             glUniformMatrix4fv(viewLoc, 1, GL_FALSE, camera.getViewMatrix());
             glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, camera.getProjectionMatrix());
 
-            glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(points1[i]._r, points1[i]._g, points1[i]._b)));
-
+            glUniform3fv(colorLoc, 1, glm::value_ptr(glm::vec3(points1[i]._r/255.0, points1[i]._g/255.0, points1[i]._b/255.0)));
+#ifndef CHIIKAWA
             glBindVertexArray(cubeVAO);
             glDrawArrays(GL_TRIANGLES, 0, cubeObject->positions.size() / 3);
+#endif
+#ifdef CHIIKAWA
+
+            if (points1[i]._character == 0) {
+                glBindVertexArray(chiikawaVAO);
+                glDrawArrays(GL_TRIANGLES, 0, chiikawaObject->positions.size() / 3);
+            }
+            else if (points1[i]._character == 1) {
+                glBindVertexArray(hachiwareVAO);
+                glDrawArrays(GL_TRIANGLES, 0, hachiwareObject->positions.size() / 3);
+            }
+            else if (points1[i]._character == 2) {
+                glBindVertexArray(usagiVAO);
+                glDrawArrays(GL_TRIANGLES, 0, usagiObject->positions.size() / 3);
+            }
+#endif
             glBindVertexArray(0);
         }
         glUseProgram(0);
@@ -302,11 +285,6 @@ int main(int argc, char* argv[]) {
         currentTime = glfwGetTime();
         dt = currentTime - lastTime;
         lastTime = currentTime;
-
-        rotateEarthDegree += (float)rotateEarthSpeed * dt;
-        if (rotateEarthDegree >= 360) {
-            rotateEarthDegree -= 360;
-        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         glfwSwapBuffers(window);
@@ -428,10 +406,7 @@ unsigned int loadTexture(const string &filename) {
     // enable texture
     glEnable(GL_TEXTURE_2D);
 
-    // use different texture unit to save more than one textures
-    if (filename.substr(filename.length() - 9) == "earth.jpg") {
-        glActiveTexture(GL_TEXTURE0);
-    }
+    glActiveTexture(GL_TEXTURE0);
 
     // create a new texture object and bind it to 2D image
     GLuint texture;
@@ -479,13 +454,6 @@ glm::vec3 HSV2RGB(glm::vec3 hsv) {
     return rgb + m;
 }
 
-
-void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    // if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
-    //     std::cout << "average cost time: " << (total_time / (double)cnt) << "ms" << '\n';
-    // }
-}
-
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -499,8 +467,10 @@ void init() {
     string dirTexture = "source\\src\\asset\\texture\\";
 
     // Object
-    earthObject = new Object(dirAsset + "earth.obj");
     cubeObject = new Object(dirAsset + "cube.obj");
+    chiikawaObject = new Object(dirAsset + "chiikawa.obj");
+    hachiwareObject = new Object(dirAsset + "hachiware.obj");
+    usagiObject = new Object(dirAsset + "usagi.obj");
 
     // Shader
     vertexShader = createShader(dirShader + "vertexShader.vert", "vert");
@@ -508,17 +478,16 @@ void init() {
     shaderProgram = createProgram(vertexShader, fragmentShader);
     glUseProgram(shaderProgram);
 
-    // Texture
-    earthTexture = loadTexture(dirTexture + "earth.jpg");
-
     // VAO, VBO
-    earthVAO = modelVAO(*earthObject);
     cubeVAO = modelVAO(*cubeObject);
+    chiikawaVAO = modelVAO(*chiikawaObject);
+    hachiwareVAO = modelVAO(*hachiwareObject);
+    usagiVAO = modelVAO(*usagiObject);
 
-    // vertices_1[0] = point(200, 0, 0, 255, 255, 255, 20, 10, -5.0f, 0, 0, 0);
+    // vertices_1[0] = point(0, 0, 0, 255, 255, 255, 10, 100, 0, 0, 0, 2);
     // vertices_2[0] = vertices_1[0];
 
-    // vertices_1[1] = point(0, 0, 0, 255, 255, 255, 10, 5, 5.0f, 0, 0, 0);
+    // vertices_1[1] = point(-20, 0, 0, 255, 255, 255, 5, 50, 0, 0.5f, 0, 2);
     // vertices_2[1] = vertices_1[1];
 
     // vertices_1[2] = point(0, 0, 200, 255, 255, 255, 20, 50, 0, 0, -5.0f, 2);
